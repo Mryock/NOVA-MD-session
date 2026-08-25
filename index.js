@@ -36,19 +36,7 @@ function generateRandomKey() {
 	return `NOVA_${r1}_${r2}_${r3}`;
 }
 
-function clearFolder(folderPath) {
-	if (!fs.existsSync(folderPath)) return;
-	const contents = fs.readdirSync(folderPath);
-	for (const item of contents) {
-		const itemPath = join(folderPath, item);
-		if (fs.statSync(itemPath).isDirectory()) {
-			fs.rmSync(itemPath, { recursive: true, force: true });
-		} else {
-			fs.unlinkSync(itemPath);
-		}
-	}
-}
-clearFolder('./session');
+// REMOVED: clearFolder('./session'); at the top to prevent session deletion before saving
 
 // Serve HTML page
 app.get('/', (req, res) => {
@@ -105,7 +93,9 @@ async function getPairingCode(phone, accessKey) {
 		try {
 			const logger = pino({ level: 'silent' });
 			const { state, saveCreds } = await baileys.useMultiFileAuthState('session');
-			const { version } = await baileys.fetchLatestBaileysVersion();
+			
+			// CRITICAL FIX: Hardcoded version to avoid outbound fetch crash
+			const version = [2, 3000, 1030234567]; 
 
 			let conn = baileys.makeWASocket({
 				version: version,
@@ -144,34 +134,46 @@ async function getPairingCode(phone, accessKey) {
 					
 					const finalKey = accessKey || generateRandomKey();
 					
-					// Fetch image
-					const imageUrl = 'https://files.catbox.moe/knnd8i.jpg';
-					const imageResponse = await fetch(imageUrl);
-					const imageBuffer = await imageResponse.arrayBuffer();
-					
-					await conn.sendButton(targetId, {
-						image: Buffer.from(imageBuffer),
-						caption: `🔑 *ʏᴏᴜʀ ᴀᴄᴄᴇss ᴋᴇʏ*\n\n\`${finalKey}\`\n\n*_ɴᴏᴠᴀ ʙᴏᴛ_*\n> *\`ᴘᴀɪʀɪɴɢ sᴜᴄᴄᴇss ᴜsᴇ ᴛʜᴇ ᴀᴄᴄᴇss ᴋᴇʏ ᴀʙᴏᴠᴇ ғᴏʀ ɴᴏᴠᴀ ʙᴏᴛ\`*\n  _ᴘʟᴇᴀsᴇ ᴅᴏɴ'ᴛ sʜᴀʀᴇ ᴛᴏ ᴜɴᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴜsᴇʀs_\n_ɪ ᴡᴏɴ'ᴛ ᴀsᴋ ʏᴏᴜ ғᴏʀ ʏᴏᴜʀ sᴇssɪᴏɴ_`,
-						buttons: [
-							{
-								type: "copy",
-								text: "📋 ᴄᴏᴘʏ ᴀᴄᴄᴇss ᴋᴇʏ",
-								copy: finalKey,
-								id: "copy_key"
-							},
-							{
-								type: "url",
-								text: "📢 ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ",
-								url: "https://whatsapp.com/channel/0029VbBaJvI7IUYbtCeaPh0I"
-							}
-						]
-					});
-					
-					const data = encryptSession('session/creds.json');
-					await saveSession(finalKey, data);
-					await baileys.delay(5000);
-					clearFolder(join(__dirname, 'session'));
-					process.send('reset');
+					// Read local image instead of fetching from external host
+					try {
+						const imageBuffer = fs.readFileSync(join(__dirname, 'media', 'nova.jpg'));
+
+						await conn.sendButton(targetId, {
+							image: imageBuffer,
+							caption: `🔑 *ʏᴏᴜʀ ᴀᴄᴄᴇss ᴋᴇʏ*\n\n\`${finalKey}\`\n\n*_ɴᴏᴠᴀ ʙᴏᴛ_*\n> *\`ᴘᴀɪʀɪɴɢ sᴜᴄᴄᴇss ᴜsᴇ ᴛʜᴇ ᴀᴄᴄᴇss ᴋᴇʏ ᴀʙᴏᴠᴇ ғᴏʀ ɴᴏᴠᴀ ʙᴏᴛ\`*\n  _ᴘʟᴇᴀsᴇ ᴅᴏɴ'ᴛ sʜᴀʀᴇ ᴛᴏ ᴜɴᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴜsᴇʀs_\n_ɪ ᴡᴏɴ'ᴛ ᴀsᴋ ʏᴏᴜ ғᴏʀ ʏᴏᴜʀ sᴇssɪᴏɴ_`,
+							buttons: [
+								{
+									type: "copy",
+									text: "📋 ᴄᴏᴘʏ ᴀᴄᴄᴇss ᴋᴇʏ",
+									copy: finalKey,
+									id: "copy_key"
+								},
+								{
+									type: "url",
+									text: "📢 ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ",
+									url: "https://whatsapp.com/channel/0029VbBaJvI7IUYbtCeaPh0I"
+								}
+							]
+						});
+
+						const data = encryptSession('session/creds.json');
+						await saveSession(finalKey, data);
+						await baileys.delay(5000);
+
+						// Clear session AFTER saving to DB
+						clearFolder(join(__dirname, 'session'));
+						process.send('reset');
+
+					} catch (localError) {
+						console.error('Error reading local image or sending message:', localError);
+						// Fallback to sending text only if image read fails
+						await conn.sendMessage(targetId, { text: `🔑 *ʏᴏᴜʀ ᴀᴄᴄᴇss ᴋᴇʏ*\n\n\`${finalKey}\`\n\n*_ɴᴏᴠᴀ ʙᴏᴛ_*\n> *\`ᴘᴀɪʀɪɴɢ sᴜᴄᴄᴇss ᴜsᴇ ᴛʜᴇ ᴀᴄᴄᴇss ᴋᴇʏ ᴀʙᴏᴠᴇ ғᴏʀ ɴᴏᴠᴀ ʙᴏᴛ\`*` });
+						const data = encryptSession('session/creds.json');
+						await saveSession(finalKey, data);
+						await baileys.delay(5000);
+						clearFolder(join(__dirname, 'session'));
+						process.send('reset');
+					}
 				}
 
 				if (connection === 'close') {
@@ -211,6 +213,20 @@ async function getPairingCode(phone, accessKey) {
 			reject(new Error('An Error Occurred'));
 		}
 	});
+}
+
+// Helper function to clear folder (included since we removed top-level one)
+function clearFolder(folderPath) {
+	if (!fs.existsSync(folderPath)) return;
+	const contents = fs.readdirSync(folderPath);
+	for (const item of contents) {
+		const itemPath = join(folderPath, item);
+		if (fs.statSync(itemPath).isDirectory()) {
+			fs.rmSync(itemPath, { recursive: true, force: true });
+		} else {
+			fs.unlinkSync(itemPath);
+		}
+	}
 }
 
 app.listen(PORT, () => {

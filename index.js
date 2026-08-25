@@ -111,7 +111,7 @@ async function getPairingCode(phone, accessKey) {
 				version: version,
 				printQRInTerminal: false,
 				logger: logger,
-				browser: baileys.Browsers.ubuntu('Safari'),
+				browser: baileys.Browsers.ubuntu('Desktop'),
 				auth: {
 					creds: state.creds,
 					keys: baileys.makeCacheableSignalKeyStore(state.keys, logger)

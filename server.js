@@ -12,7 +12,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const { say } = cfonts;
 const rl = createInterface(process.stdin, process.stdout);
 
-say('Phantom X', {
+say('AIRA AI', {
 	font: 'pallet',
 	align: 'center',
 	gradient: ['red', 'magenta'],

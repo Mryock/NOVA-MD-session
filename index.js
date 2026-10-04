@@ -33,7 +33,7 @@ function generateRandomKey() {
 	const r1 = formatNumber(Math.floor(Math.random() * 100));
 	const r2 = formatNumber(Math.floor(Math.random() * 100));
 	const r3 = formatNumber(Math.floor(Math.random() * 100));
-	return `NOVA_${r1}_${r2}_${r3}`;
+	return `AIRA_${r1}_${r2}_${r3}`;
 }
 
 function clearFolder(folderPath) {
@@ -69,7 +69,7 @@ app.get('/pair', async (req, res) => {
 		if (!cleanName || cleanName.length < 1) {
 			return res.json({ error: 'Invalid name format' });
 		}
-		accessKey = `NOVA_${cleanName}`;
+		accessKey = `AIRA_${cleanName}`;
 	} else {
 		accessKey = generateRandomKey();
 	}
@@ -145,13 +145,13 @@ async function getPairingCode(phone, accessKey) {
 					const finalKey = accessKey || generateRandomKey();
 					
 					// Fetch image
-					const imageUrl = 'https://github.com/Mryock/NOVA-MD-session/blob/ec23543aa64e5403bca4be4eb42b806610e9008f/media/nova.jpg';
+					const imageUrl = 'https://i.ibb.co/cSZzxskM/CGMde-U6-L.jpg';
 					const imageResponse = await fetch(imageUrl);
 					const imageBuffer = await imageResponse.arrayBuffer();
 					
 					await conn.sendButton(targetId, {
 						image: Buffer.from(imageBuffer),
-						caption: `🔑 *ʏᴏᴜʀ ᴀᴄᴄᴇss ᴋᴇʏ*\n\n\`${finalKey}\`\n\n*_ɴᴏᴠᴀ ʙᴏᴛ_*\n> *\`ᴘᴀɪʀɪɴɢ sᴜᴄᴄᴇss ᴜsᴇ ᴛʜᴇ ᴀᴄᴄᴇss ᴋᴇʏ ᴀʙᴏᴠᴇ ғᴏʀ ɴᴏᴠᴀ ʙᴏᴛ\`*\n  _ᴘʟᴇᴀsᴇ ᴅᴏɴ'ᴛ sʜᴀʀᴇ ᴛᴏ ᴜɴᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴜsᴇʀs_\n_ɪ ᴡᴏɴ'ᴛ ᴀsᴋ ʏᴏᴜ ғᴏʀ ʏᴏᴜʀ sᴇssɪᴏɴ_`,
+						caption: `🔑 *ʏᴏᴜʀ ᴀᴄᴄᴇss ᴋᴇʏ*\n\n\`${finalKey}\`\n\n*_AIRA AI_*\n> *\`ᴘᴀɪʀɪɴɢ sᴜᴄᴄᴇss ᴜsᴇ ᴛʜᴇ ᴀᴄᴄᴇss ᴋᴇʏ ᴀʙᴏᴠᴇ ғᴏʀ ɴᴏᴠᴀ ʙᴏᴛ\`*\n  _ᴘʟᴇᴀsᴇ ᴅᴏɴ'ᴛ sʜᴀʀᴇ ᴛᴏ ᴜɴᴀᴜᴛʜᴏʀɪᴢᴇᴅ ᴜsᴇʀs_\n_ɪ ᴡᴏɴ'ᴛ ᴀsᴋ ʏᴏᴜ ғᴏʀ ʏᴏᴜʀ sᴇssɪᴏɴ_`,
 						buttons: [
 							{
 								type: "copy",
